@@ -33,13 +33,13 @@ if not sucesso then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "ToggleButton"
 ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 20, 0, 100) -- Posição inicial no canto
+ToggleBtn.Position = UDim2.new(0, 20, 0, 100)
 ToggleBtn.BackgroundColor3 = Tema.FundoSec
 ToggleBtn.Text = "⚡"
 ToggleBtn.TextColor3 = Tema.Destaque
 ToggleBtn.TextSize = 28
 ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.ZIndex = 10 -- Sempre por cima
+ToggleBtn.ZIndex = 10
 ToggleBtn.Parent = ScreenGui
 
 local CornerToggle = Instance.new("UICorner")
@@ -80,7 +80,7 @@ MainFrame.Size = UDim2.new(0, 340, 0, 380)
 MainFrame.Position = UDim2.new(0.5, -170, 0.5, -190)
 MainFrame.BackgroundColor3 = Tema.Fundo
 MainFrame.ClipsDescendants = true
-MainFrame.Visible = false -- Começa minimizado
+MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
 local CornerMain = Instance.new("UICorner")
@@ -114,7 +114,7 @@ Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- SISTEMA ABRE/FECHA (ANIMAÇÃO LEVE)
+-- SISTEMA ABRE/FECHA
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
@@ -133,7 +133,7 @@ local UIList = Instance.new("UIListLayout")
 UIList.Padding = UDim.new(0, 10)
 UIList.Parent = Container
 
--- FUNÇÃO PARA CRIAR BOTÕES BONITOS (UI MODULE)
+-- FUNÇÃO PARA CRIAR BOTÕES (UI MODULE)
 local function CriarModulo(texto, funcao)
     local Btn = Instance.new("TextButton")
     Btn.Size = UDim2.new(1, 0, 0, 50)
@@ -158,7 +158,7 @@ local function CriarModulo(texto, funcao)
 
     local CornerInd = Instance.new("UICorner")
     CornerInd.CornerRadius = UDim.new(0, 2)
-    CornerInd.Parent = Indicador
+    CornerInd.Parent = CornerInd
 
     local ativo = false
     Btn.MouseButton1Click:Connect(function()
@@ -179,7 +179,7 @@ local function CriarModulo(texto, funcao)
 end
 
 --- ==========================================
---- ADICIONANDO AS MELHORES FUNÇÕES
+--- ADICIONANDO AS MELHORES FUNÇÕES CORRIGIDAS
 --- ==========================================
 
 -- Modulo 1: Limpeza Máxima de Lag (Texturas)
@@ -203,7 +203,7 @@ CriarModulo("Esconder Efeitos de Golpes (PvP)", function(estado)
     task.spawn(function()
         while _G.EsconderSkills do
             for _, obj in ipairs(Workspace:GetDescendants()) do
-                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") then
+                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Beam") then
                     obj.Enabled = false
                 elseif obj:IsA("Explosion") then
                     obj.Visible = false
@@ -224,6 +224,55 @@ CriarModulo("Mostrar Frutas no Mapa", function(estado)
     else
         task.spawn(function()
             while _G.FruitESP do
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj:IsA("Tool
-                  
+                -- Remove marcadores antigos para não duplicar
+                for _, v in pairs(marcadoresFrutas) do if v then v:Destroy() end end
+                table.clear(marcadoresFrutas)
+                
+                -- Procura por frutas soltas no mapa
+                for _, obj in ipairs(Workspace:GetChildren()) do
+                    if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj:FindFirstChild("Handle")) then
+                        local Box = Instance.new("Highlight")
+                        Box.Color3 = Color3.fromRGB(0, 255, 100)
+                        Box.FillTransparency = 0.5
+                        Box.Adornee = obj
+                        Box.Parent = ScreenGui
+                        table.insert(marcadoresFrutas, Box)
+                    end
+                end
+                task.wait(3) -- Atualiza a cada 3 segundos de forma leve
+            end
+        end)
+    end
+end)
+
+-- Modulo 4: Rastreador e Notificador de Chefes (Boss ESP)
+local marcadoresBoss = {}
+CriarModulo("Localizar Bosses Ativos", function(estado)
+    _G.BossESP = estado
+    if not estado then
+        for _, v in pairs(marcadoresBoss) do if v then v:Destroy() end end
+        table.clear(marcadoresBoss)
+    else
+        task.spawn(function()
+            while _G.BossESP do
+                for _, v in pairs(marcadoresBoss) do if v then v:Destroy() end end
+                table.clear(marcadoresBoss)
+
+                for _, npc in ipairs(Workspace.Enemies:GetChildren()) do
+                    local hum = npc:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.MaxHealth >= 50000 then -- Filtra apenas inimigos fortes (Bosses)
+                        local Box = Instance.new("Highlight")
+                        Box.Color3 = Color3.fromRGB(255, 0, 50)
+                        Box.FillTransparency = 0.4
+                        Box.Adornee = npc
+                        Box.Parent = ScreenGui
+                        table.insert(marcadoresBoss, Box)
+                    end
+                end
+                task.wait(4)
+            end
+        end)
+    end
+end)
+
+print("🎯 MENU MASTER V6 CARREGADO: Interface visual ativa e corrigida!")
