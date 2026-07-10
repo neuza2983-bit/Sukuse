@@ -7,9 +7,10 @@ local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 local LocalPlayer = Players.LocalPlayer
 
--- 1. SISTEMA DE CORES E ESTILO (DESIGN BONITO)
+-- 1. SISTEMA DE CORES E ESTILO (DESIGN PREMIUM)
 local Tema = {
     Fundo = Color3.fromRGB(15, 15, 20),
     FundoSec = Color3.fromRGB(22, 22, 28),
@@ -25,7 +26,6 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MasterPerformance_V6"
 ScreenGui.ResetOnSpawn = false
 
--- Suporte para Delta/Mobile (CoreGui)
 local sucesso, erro = pcall(function() ScreenGui.Parent = CoreGui end)
 if not sucesso then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
@@ -51,7 +51,7 @@ StrokeToggle.Color = Tema.Destaque
 StrokeToggle.Thickness = 1.5
 StrokeToggle.Parent = ToggleBtn
 
--- SISTEMA DE ARRASTAR O BOTÃO FLUTUANTE (MOBILE)
+-- SISTEMA DE ARRASTAR O BOTÃO FLUTUANTE
 local dragging, dragInput, dragStart, startPos
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -92,7 +92,6 @@ StrokeMain.Color = Color3.fromRGB(40, 40, 50)
 StrokeMain.Thickness = 2
 StrokeMain.Parent = MainFrame
 
--- TÍTULO DO MENU (HEADER BAR)
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 45)
@@ -107,24 +106,23 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "MASTER v6 ULTIMATE"
+Title.Text = "SUKUSE HUB v6"
 Title.TextColor3 = Tema.Destaque
 Title.TextSize = 18
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
--- SISTEMA ABRE/FECHA
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- 5. CONTAINER DE FUNÇÕES (SCROLLING)
+-- 5. CONTAINER DE FUNÇÕES
 local Container = Instance.new("ScrollingFrame")
 Container.Size = UDim2.new(1, -20, 1, -65)
 Container.Position = UDim2.new(0, 10, 0, 55)
 Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0, 0, 0, 420)
+Container.CanvasSize = UDim2.new(0, 0, 0, 400)
 Container.ScrollBarThickness = 4
 Container.ScrollBarImageColor3 = Tema.Destaque
 Container.Parent = MainFrame
@@ -133,7 +131,6 @@ local UIList = Instance.new("UIListLayout")
 UIList.Padding = UDim.new(0, 10)
 UIList.Parent = Container
 
--- FUNÇÃO PARA CRIAR BOTÕES (UI MODULE)
 local function CriarModulo(texto, funcao)
     local Btn = Instance.new("TextButton")
     Btn.Size = UDim2.new(1, 0, 0, 50)
@@ -158,7 +155,7 @@ local function CriarModulo(texto, funcao)
 
     local CornerInd = Instance.new("UICorner")
     CornerInd.CornerRadius = UDim.new(0, 2)
-    CornerInd.Parent = CornerInd
+    CornerInd.Parent = Indicador
 
     local ativo = false
     Btn.MouseButton1Click:Connect(function()
@@ -179,100 +176,143 @@ local function CriarModulo(texto, funcao)
 end
 
 --- ==========================================
---- ADICIONANDO AS MELHORES FUNÇÕES CORRIGIDAS
+--- MOTOR DO MODOD PVP AGRESSIVO (ANTI-LAG)
 --- ==========================================
+_G.ModoPvP_FPS = false
+local conexaoSkills = nil
 
--- Modulo 1: Limpeza Máxima de Lag (Texturas)
-CriarModulo("Otimizar Gráficos (Remover Lag)", function(estado)
+local function LimparEfeitosPvP(obj)
+    if not _G.ModoPvP_FPS then return end
+    
+    -- Deleta luzes, fumaça, trails e brilhos na hora
+    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") or obj:IsA("Beam") or obj:IsA("Light") or obj:IsA("Highlight") then
+        if not obj:IsDescendantOf(ScreenGui) then obj:Destroy() end
+    -- Tira texturas e céu para aliviar o processador
+    elseif obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("Sky") then
+        obj:Destroy()
+    -- Converte o mapa para plástico sem sombras ou reflexos
+    elseif obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("CornerWedgePart") or obj:IsA("WedgePart") then
+        obj.Material = Enum.Material.SmoothPlastic
+        obj.Reflectance = 0
+        obj.CastShadow = false
+    -- Tira acessórios 3D e capas pesadas dos inimigos por perto
+    elseif obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("Clothing") or obj:IsA("Accessory") then
+        obj:Destroy()
+    -- Interrompe animações de golpes
+    elseif obj:IsA("Animation") or obj:IsA("AnimationTrack") then
+        obj:Destroy()
+    end
+end
+
+-- MÓDULO 1: O BOTÃO DE FPS SUPREMO PARA QUANDO FOR PVP
+CriarModulo("Modo PvP Ultra FPS (Ativar na Luta)", function(estado)
+    _G.ModoPvP_FPS = estado
     if estado then
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
         if Lighting then Lighting.GlobalShadows = false end
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("Texture") or obj:IsA("Decal") then obj:Destroy()
-            elseif obj:IsA("Part") or obj:IsA("MeshPart") then 
-                obj.Material = Enum.Material.SmoothPlastic 
-                obj.CastShadow = false
-            end
+        if Terrain then
+            Terrain.WaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterTransparency = 1
         end
-    end
-end)
-
--- Modulo 2: Filtro Anti-Lag para PvP (Skills)
-CriarModulo("Esconder Efeitos de Golpes (PvP)", function(estado)
-    _G.EsconderSkills = estado
-    task.spawn(function()
-        while _G.EsconderSkills do
-            for _, obj in ipairs(Workspace:GetDescendants()) do
-                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Beam") then
-                    obj.Enabled = false
-                elseif obj:IsA("Explosion") then
-                    obj.Visible = false
-                end
-            end
-            task.wait(1.5)
-        end
-    end)
-end)
-
--- Modulo 3: Rastreador de Frutas do Mapa (Visual ESP)
-local marcadoresFrutas = {}
-CriarModulo("Mostrar Frutas no Mapa", function(estado)
-    _G.FruitESP = estado
-    if not estado then
-        for _, v in pairs(marcadoresFrutas) do if v then v:Destroy() end end
-        table.clear(marcadoresFrutas)
-    else
-        task.spawn(function()
-            while _G.FruitESP do
-                -- Remove marcadores antigos para não duplicar
-                for _, v in pairs(marcadoresFrutas) do if v then v:Destroy() end end
-                table.clear(marcadoresFrutas)
-                
-                -- Procura por frutas soltas no mapa
-                for _, obj in ipairs(Workspace:GetChildren()) do
-                    if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj:FindFirstChild("Handle")) then
-                        local Box = Instance.new("Highlight")
-                        Box.Color3 = Color3.fromRGB(0, 255, 100)
-                        Box.FillTransparency = 0.5
-                        Box.Adornee = obj
-                        Box.Parent = ScreenGui
-                        table.insert(marcadoresFrutas, Box)
+        
+        -- Passa o rodo imediato em tudo o que tá carregado
+        for _, obj in ipairs(Workspace:GetDescendants()) do pcall(LimparEfeitosPvP) end
+        
+        -- Intercepta golpes inimigos na velocidade da luz
+        conexaoSkills = Workspace.DescendantAdded:Connect(function(obj)
+            if _G.ModoPvP_FPS then
+                pcall(LimparEfeitosPvP)
+                if obj:IsA("BasePart") and not obj:IsDescendantOf(ScreenGui) then
+                    local name = obj.Name:lower()
+                    if name:find("skill") or name:find("effect") or name:find("hit") or name:find("projectile") or name:find("attack") or name:find("portal") then
+                        obj:Destroy()
                     end
                 end
-                task.wait(3) -- Atualiza a cada 3 segundos de forma leve
             end
         end)
-    end
-end)
-
--- Modulo 4: Rastreador e Notificador de Chefes (Boss ESP)
-local marcadoresBoss = {}
-CriarModulo("Localizar Bosses Ativos", function(estado)
-    _G.BossESP = estado
-    if not estado then
-        for _, v in pairs(marcadoresBoss) do if v then v:Destroy() end end
-        table.clear(marcadoresBoss)
-    else
+        
+        -- Esvazia lixeira de RAM em segundo plano
         task.spawn(function()
-            while _G.BossESP do
-                for _, v in pairs(marcadoresBoss) do if v then v:Destroy() end end
-                table.clear(marcadoresBoss)
-
-                for _, npc in ipairs(Workspace.Enemies:GetChildren()) do
-                    local hum = npc:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.MaxHealth >= 50000 then -- Filtra apenas inimigos fortes (Bosses)
-                        local Box = Instance.new("Highlight")
-                        Box.Color3 = Color3.fromRGB(255, 0, 50)
-                        Box.FillTransparency = 0.4
-                        Box.Adornee = npc
-                        Box.Parent = ScreenGui
-                        table.insert(marcadoresBoss, Box)
-                    end
-                end
-                task.wait(4)
+            while _G.ModoPvP_FPS do
+                pcall(function() Debris:ClearAllChildren() end)
+                task.wait(0.2)
             end
         end)
+    else
+        if conexaoSkills then conexaoSkills:Disconnect() conexaoSkills = nil end
     end
 end)
 
-print("🎯 MENU MASTER V6 CARREGADO: Interface visual ativa e corrigida!")
+-- MÓDULO 2: RADAR AUTOMÁTICO DE FRUTAS (COM NOME)
+local marcadoresVisuais = {}
+task.spawn(function()
+    while true do
+        -- Sempre limpa os antigos antes de recalcular a posição
+        for _, v in pairs(marcadoresVisuais) do if v then v:Destroy() end end
+        table.clear(marcadoresVisuais)
+
+        -- Mostrar Frutas
+        for _, obj in ipairs(Workspace:GetChildren()) do
+            if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj:FindFirstChild("Handle")) then
+                local Box = Instance.new("Highlight")
+                Box.Color3 = Color3.fromRGB(0, 255, 100)
+                Box.FillTransparency = 0.4
+                Box.Adornee = obj
+                Box.Parent = ScreenGui
+                table.insert(marcadoresVisuais, Box)
+
+                local Billboard = Instance.new("BillboardGui")
+                Billboard.Adornee = obj
+                Billboard.Size = UDim2.new(0, 200, 0, 50)
+                Billboard.AlwaysOnTop = true
+                Billboard.StudsOffset = Vector3.new(0, 4, 0)
+                Billboard.Parent = ScreenGui
+                table.insert(marcadoresVisuais, Billboard)
+
+                local Label = Instance.new("TextLabel")
+                Label.Size = UDim2.new(1, 0, 1, 0)
+                Label.BackgroundTransparency = 1
+                Label.Text = "🍎 " .. obj.Name
+                Label.TextColor3 = Color3.fromRGB(0, 255, 100)
+                Label.Font = Enum.Font.GothamBold
+                Label.TextSize = 14
+                Label.Parent = Billboard
+            end
+        end
+
+        -- Mostrar Bosses Ativos
+        local enemiesFolder = Workspace:FindFirstChild("Enemies")
+        if enemiesFolder then
+            for _, npc in ipairs(enemiesFolder:GetChildren()) do
+                local hum = npc:FindFirstChildOfClass("Humanoid")
+                if hum and hum.MaxHealth >= 50000 then
+                    local Box = Instance.new("Highlight")
+                    Box.Color3 = Color3.fromRGB(255, 0, 50)
+                    Box.FillTransparency = 0.4
+                    Box.Adornee = npc
+                    Box.Parent = ScreenGui
+                    table.insert(marcadoresVisuais, Box)
+
+                    local Billboard = Instance.new("BillboardGui")
+                    Billboard.Adornee = npc
+                    Billboard.Size = UDim2.new(0, 200, 0, 50)
+                    Billboard.AlwaysOnTop = true
+                    Billboard.StudsOffset = Vector3.new(0, 5, 0)
+                    Billboard.Parent = ScreenGui
+                    table.insert(marcadoresVisuais, Billboard)
+
+                    local Label = Instance.new("TextLabel")
+                    Label.Size = UDim2.new(1, 0, 1, 0)
+                    Label.BackgroundTransparency = 1
+                    Label.Text = "👑 BOSS: " .. npc.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 0, 50)
+                    Label.Font = Enum.Font.GothamBold
+                    Label.TextSize = 14
+                    Label.Parent = Billboard
+                end
+            end
+        end
+        task.wait(3)
+    end
+end)
+
+print("🎯 [Sukuse V6] SCRIPT ATUALIZADO: Botão de PvP FPS e Radares Ativos!")
