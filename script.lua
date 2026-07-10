@@ -155,7 +155,7 @@ local function CriarModulo(texto, funcao)
 
     local CornerInd = Instance.new("UICorner")
     CornerInd.CornerRadius = UDim.new(0, 2)
-    CornerInd.Parent = Indicador
+    CornerInd.Parent = Indicador -- CORRIGIDO: Agora aponta corretamente para o Indicador
 
     local ativo = false
     Btn.MouseButton1Click:Connect(function()
@@ -176,7 +176,7 @@ local function CriarModulo(texto, funcao)
 end
 
 --- ==========================================
---- MOTOR DO MODOD PVP AGRESSIVO (ANTI-LAG)
+--- MOTOR DO MODO PVP AGRESSIVO (ANTI-LAG)
 --- ==========================================
 _G.ModoPvP_FPS = false
 local conexaoSkills = nil
@@ -184,21 +184,16 @@ local conexaoSkills = nil
 local function LimparEfeitosPvP(obj)
     if not _G.ModoPvP_FPS then return end
     
-    -- Deleta luzes, fumaça, trails e brilhos na hora
     if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Fire") or obj:IsA("Beam") or obj:IsA("Light") or obj:IsA("Highlight") then
         if not obj:IsDescendantOf(ScreenGui) then obj:Destroy() end
-    -- Tira texturas e céu para aliviar o processador
     elseif obj:IsA("Texture") or obj:IsA("Decal") or obj:IsA("Sky") then
         obj:Destroy()
-    -- Converte o mapa para plástico sem sombras ou reflexos
     elseif obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("CornerWedgePart") or obj:IsA("WedgePart") then
         obj.Material = Enum.Material.SmoothPlastic
         obj.Reflectance = 0
         obj.CastShadow = false
-    -- Tira acessórios 3D e capas pesadas dos inimigos por perto
     elseif obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("Clothing") or obj:IsA("Accessory") then
         obj:Destroy()
-    -- Interrompe animações de golpes
     elseif obj:IsA("Animation") or obj:IsA("AnimationTrack") then
         obj:Destroy()
     end
@@ -214,105 +209,5 @@ CriarModulo("Modo PvP Ultra FPS (Ativar na Luta)", function(estado)
             Terrain.WaterWaveSize = 0; Terrain.WaterWaveSpeed = 0; Terrain.WaterTransparency = 1
         end
         
-        -- Passa o rodo imediato em tudo o que tá carregado
-        for _, obj in ipairs(Workspace:GetDescendants()) do pcall(LimparEfeitosPvP) end
-        
-        -- Intercepta golpes inimigos na velocidade da luz
-        conexaoSkills = Workspace.DescendantAdded:Connect(function(obj)
-            if _G.ModoPvP_FPS then
-                pcall(LimparEfeitosPvP)
-                if obj:IsA("BasePart") and not obj:IsDescendantOf(ScreenGui) then
-                    local name = obj.Name:lower()
-                    if name:find("skill") or name:find("effect") or name:find("hit") or name:find("projectile") or name:find("attack") or name:find("portal") then
-                        obj:Destroy()
-                    end
-                end
-            end
-        end)
-        
-        -- Esvazia lixeira de RAM em segundo plano
-        task.spawn(function()
-            while _G.ModoPvP_FPS do
-                pcall(function() Debris:ClearAllChildren() end)
-                task.wait(0.2)
-            end
-        end)
-    else
-        if conexaoSkills then conexaoSkills:Disconnect() conexaoSkills = nil end
-    end
-end)
-
--- MÓDULO 2: RADAR AUTOMÁTICO DE FRUTAS (COM NOME)
-local marcadoresVisuais = {}
-task.spawn(function()
-    while true do
-        -- Sempre limpa os antigos antes de recalcular a posição
-        for _, v in pairs(marcadoresVisuais) do if v then v:Destroy() end end
-        table.clear(marcadoresVisuais)
-
-        -- Mostrar Frutas
-        for _, obj in ipairs(Workspace:GetChildren()) do
-            if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj:FindFirstChild("Handle")) then
-                local Box = Instance.new("Highlight")
-                Box.Color3 = Color3.fromRGB(0, 255, 100)
-                Box.FillTransparency = 0.4
-                Box.Adornee = obj
-                Box.Parent = ScreenGui
-                table.insert(marcadoresVisuais, Box)
-
-                local Billboard = Instance.new("BillboardGui")
-                Billboard.Adornee = obj
-                Billboard.Size = UDim2.new(0, 200, 0, 50)
-                Billboard.AlwaysOnTop = true
-                Billboard.StudsOffset = Vector3.new(0, 4, 0)
-                Billboard.Parent = ScreenGui
-                table.insert(marcadoresVisuais, Billboard)
-
-                local Label = Instance.new("TextLabel")
-                Label.Size = UDim2.new(1, 0, 1, 0)
-                Label.BackgroundTransparency = 1
-                Label.Text = "🍎 " .. obj.Name
-                Label.TextColor3 = Color3.fromRGB(0, 255, 100)
-                Label.Font = Enum.Font.GothamBold
-                Label.TextSize = 14
-                Label.Parent = Billboard
-            end
-        end
-
-        -- Mostrar Bosses Ativos
-        local enemiesFolder = Workspace:FindFirstChild("Enemies")
-        if enemiesFolder then
-            for _, npc in ipairs(enemiesFolder:GetChildren()) do
-                local hum = npc:FindFirstChildOfClass("Humanoid")
-                if hum and hum.MaxHealth >= 50000 then
-                    local Box = Instance.new("Highlight")
-                    Box.Color3 = Color3.fromRGB(255, 0, 50)
-                    Box.FillTransparency = 0.4
-                    Box.Adornee = npc
-                    Box.Parent = ScreenGui
-                    table.insert(marcadoresVisuais, Box)
-
-                    local Billboard = Instance.new("BillboardGui")
-                    Billboard.Adornee = npc
-                    Billboard.Size = UDim2.new(0, 200, 0, 50)
-                    Billboard.AlwaysOnTop = true
-                    Billboard.StudsOffset = Vector3.new(0, 5, 0)
-                    Billboard.Parent = ScreenGui
-                    table.insert(marcadoresVisuais, Billboard)
-
-                    local Label = Instance.new("TextLabel")
-                    Label.Size = UDim2.new(1, 0, 1, 0)
-                    Label.BackgroundTransparency = 1
-                    Label.Text = "👑 BOSS: " .. npc.Name
-                    Label.TextColor3 = Color3.fromRGB(255, 0, 50)
-                    Label.Font = Enum.Font.GothamBold
-                    Label.TextSize = 14
-                    Label.Parent = Billboard
-                end
-            end
-        end
-        task.wait(3)
-    end
-end)
-
-print("🎯 [Sukuse V6] SCRIPT ATUALIZADO: Botão de PvP FPS e Radares Ativos!")
+        for _, obj in ipairs(Workspace:GetDescendants()) do p
+                
